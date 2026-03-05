@@ -136,6 +136,10 @@ sudo ufw reload
 
 ## 6. UI 참고 이미지 (UI Reference)
 
+### 6.1 메인 대시보드 (Main Dashboard)
+- **개요**: 다중 모터 축의 현재 위치, 이동 제한치, 상태(IDLE/MOVING 등)를 종합적으로 모니터링하고 제어할 수 있는 메인 패널 화면입니다. 여러 모터를 한 화면에서 직관적으로 관리할 수 있습니다.
 ![Dashboard Motor](docs/image/dashboard_motor.png)
-![Motor Popup](docs/image/moto_popup.png)
 
+### 6.2 모터 상세 설정 창 (Motor Settings Popup)
+- **개요**: 개별 모터의 성능과 직결되는 세부 파라미터(`MRES`, `VELO`, `JVEL` 등)를 설정하고 변경된 값을 적용할 수 있는 상세 모달 윈도우입니다.
+![Motor Popup](docs/image/moto_popup.png)

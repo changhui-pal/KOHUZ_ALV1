@@ -56,22 +56,23 @@
 ---
 ## 📋 1. 작업지시 (User Instruction)
 1. README.md 파일 최하단에 참고용으로 docs/image/ 파일들 삽입
+2. 삽입한 이미지 경로에 각각 간단한 설명을 추가 (메인 대시보드, 모터 설정 창)
 
 ### ✅ 1.1 Todo List (AI Analysis)
 - [x] **Step 1: Context Analysis** - `docs/image/` 디렉터리 내의 이미지 파일 목록 확인
-- [x] **Step 2: Core Implementation** - `README.md` 파일 하단에 마크다운 문법으로 이미지 링크 추가
+- [x] **Step 2: Core Implementation** - `README.md` 파일 하단에 마크다운 문법으로 이미지 링크 및 설명 단락 추가
 - [x] **Step 3: Validation** - 파일 변경 내용이 올바른지 확인
 - [x] **Step 4: Documentation** - `Instruction.md`에 결과 기록
 
 ### 📝 1.2 Result (Execution Summary)
-- `README.md` 파일의 가장 하단에 `## 6. UI 참고 이미지 (UI Reference)` 섹션을 생성하고, `dashboard_motor.png`와 `moto_popup.png` 이미지가 표시되도록 삽입하였습니다.
+- `README.md` 파일의 가장 하단에 `## 6. UI 참고 이미지 (UI Reference)` 섹션을 생성하였습니다.
+- 6.1과 6.2 하위 섹션을 두고, `dashboard_motor.png`와 `moto_popup.png` 이미지를 삽입함과 동시에 각 창이 어떤 역할을 하는지 간단한 텍스트 설명을 추가하였습니다.
 
 ### 🛠 1.3 변경 사항 (Summary of Changes)
-- **수정 위치:** `Line 137-141` in `README.md`
+- **수정 위치:** `Line 137-146` in `README.md`
 - **주요 로직:** 
-  - `docs/image/dashboard_motor.png`
-  - `docs/image/moto_popup.png`
-  마크다운 이미지 태그(`![Alt](path)`)를 사용하여 삽입.
+  - 각 창에 대한 설명(개요) 텍스트 추가
+  - 마크다운 이미지 태그(`![Alt](path)`)를 사용하여 이미지 삽입
 
 ### 🔍 검증 결과 (Validation)
 - [x] 마크다운 이미지 렌더링 정상 여부 확인 (경로 일치)
