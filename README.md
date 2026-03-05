@@ -133,3 +133,9 @@ sudo ufw reload
 - 크롬(Chrome) 등의 웹 브라우저를 열고, 위에 입력했던 `IP_ADDRESS`를 포함한 URL로 접속합니다.
   - 경로: `http://[IP_ADDRESS]:8888/dashboard.html`
   - *(예시: http://192.168.1.100:8888/dashboard.html)*
+
+## 6. UI 참고 이미지 (UI Reference)
+
+![Dashboard Motor](docs/image/dashboard_motor.png)
+![Motor Popup](docs/image/moto_popup.png)
+
