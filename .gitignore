@@ -26,3 +26,6 @@ O.*/
 *.log
 .*.swp
 .DS_Store
+
+# clang-tidy / IDE compile database
+compile_commands.json

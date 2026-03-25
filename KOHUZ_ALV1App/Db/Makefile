@@ -8,6 +8,7 @@ include $(TOP)/configure/CONFIG
 # databases, templates, substitutions like this
 #DB += xxx.db
 DB += KOHZU_Motor.db
+DB += KOHZU_HomingMethod.db
 
 #----------------------------------------------------
 # If <anyname>.db template is not named <anyname>*.template add
