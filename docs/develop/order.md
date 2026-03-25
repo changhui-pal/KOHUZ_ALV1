@@ -39,3 +39,17 @@
 
 ### 💡 사용예시
 - order.md : ?? 라인의 지시사항을 반영하여 수행해. (템플릿 적용)
+
+
+
+
+
+# 2026.03.25
+## 📋 1. 작업지시 (User Instruction)
+1. 수정 사항 :
+    1) KOHUZ_ALV1App/Db/Makefile 의 DB += KOHZU_Motor.db 바로 아래 라인에 DB += KOHZU_HomingMethod.db 추가하여 빌드 시 KOHZU_HomingMethod.db 파일이 포함될 수 있도록 함.
+    2) KOHUZ_ALV1/ 위치에서 bear make를 통해 실제 컴파일러가 사용하는 include 경로를 IDE가 확인할 수 있도록 compile_commands.json 생성하고 .gitignore 에 compile_commands.json 추가하여 타 개발자와의 충돌을 방지함.
+2. KOHUZ_ALV1 프로젝트 빌드.
+- **참조 파일:**
+    - `KOHUZ_ALV1App/Db/Makefile`
+    - `.gitignore`
