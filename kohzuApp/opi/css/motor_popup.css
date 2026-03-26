@@ -1,18 +1,18 @@
 
     /* 다크모드 기본 스타일 (흰색 배경 문제 해결) */
-    .input-dark-tab,
-    input[data-pv$=".VAL"] {
-background-color: #0f172a !important;
-border: 1px solid #334155 !important;
-color: #e2e8f0 !important;
+    body .input-dark-tab,
+    body input[data-pv$=".VAL"] {
+background-color: #0f172a;
+border: 1px solid #334155;
+color: #e2e8f0;
 border-radius: 0.25rem;
 outline: none;
 transition: border-color 0.2s;
     }
 
-    .input-dark-tab:focus,
-    input[data-pv$=".VAL"]:focus {
-border-color: #3b82f6 !important;
+    body .input-dark-tab:focus,
+    body input[data-pv$=".VAL"]:focus {
+border-color: #3b82f6;
     }
 
     /* Global Font Scale (Instruction 5) */
@@ -27,9 +27,9 @@ font-family: 'Inter', sans-serif;
     /* 왼쪽제어카드 모터 PV 칸 크기 80px로 통일 */
     .left-control-card .input-dark-tab,
     .left-control-card input[data-pv$=".VAL"] {
-width: 80px !important;
-margin: 0 auto !important;
-display: block !important;
+width: 80px;
+margin: 0 auto;
+display: block;
     }
 
 
@@ -37,8 +37,8 @@ display: block !important;
     /* Resolution & Setup 전용 입력창 너비 고정 */
     .resolution-setup-panel .input-dark-tab,
     .resolution-setup-panel select {
-width: 80px !important;
-display: inline-block !important;
-margin: 0 !important;
+width: 80px;
+display: inline-block;
+margin: 0;
     }
 

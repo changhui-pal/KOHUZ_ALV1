@@ -7,11 +7,218 @@
         let currentModalAxis = null;
         let motorPopupTemplate = null;
 
-        function toggleCollapse(btn) {
-            const card = btn.closest('.card');
-            if (card) {
-                card.classList.toggle('collapsed');
+        const UI = {
+            toggleCollapse(btn) {
+                const card = btn.closest('.card');
+                if (card) {
+                    card.classList.toggle('collapsed');
+                }
+            },
+
+            saveSessionToServer() {
+                const now = new Date();
+                const yy = String(now.getFullYear()).slice(2);
+                const mm = String(now.getMonth() + 1).padStart(2, '0');
+                const dd = String(now.getDate()).padStart(2, '0');
+                const hh = String(now.getHours()).padStart(2, '0');
+                const min = String(now.getMinutes()).padStart(2, '0');
+                const defaultName = `session_${yy}${mm}${dd}_${hh}${min}.json`;
+
+                const filenameInput = prompt("Enter session name to save:", defaultName);
+                if (!filenameInput) return;
+                const filename = filenameInput.toLowerCase().endsWith('.json') ? filenameInput : filenameInput + '.json';
+
+                const sessionData = {
+                    notepad: document.getElementById('notepad').value,
+                    configs: axesConfig,
+                    pvs: {}
+                };
+
+                // 1. Collect values from valueCache for all motors
+                for (let i = 1; i <= 6; i++) {
+                    const motorPrefix = `${PREFIX}m${i}`;
+                    CORE_PV_SUFFIXES.forEach(suffix => {
+                        const fullPv = motorPrefix + suffix;
+                        if (app.valueCache[fullPv] !== undefined) {
+                            sessionData.pvs[fullPv] = app.valueCache[fullPv];
+                        }
+                    });
+                }
+
+                // 2. Collect current values from DOM
+                document.querySelectorAll('input[data-actual-pv], select[data-actual-pv]').forEach(el => {
+                    const pv = el.getAttribute('data-actual-pv');
+                    // Allow .VAL to be saved
+                    if (pv.endsWith('.RLV') || pv.endsWith('.JOGR') || pv.endsWith('.JOGF')) return;
+                    sessionData.pvs[pv] = el.type === 'number' ? parseFloat(el.value) : el.value;
+                });
+
+                // 3. Add sequence steps
+                sessionData.sequenceSteps = sequenceSteps;
+
+                fetch('/api/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename, data: sessionData })
+                })
+                .then(r => r.json())
+                .then(result => {
+                    if (result.success) {
+                        alert(`Session saved: ${filename}`);
+                        populateSessionDropdown();
+                    } else {
+                        alert('Failed to save session');
+                    }
+                })
+                .catch(err => {
+                    alert('Error saving session');
+                    console.error(err);
+                });
+            },
+
+            loadSessionFromServer(filename) {
+                return fetch(`/sessions/${filename}`)
+                    .then(r => r.json())
+                    .then(sessionData => {
+                        if (sessionData.configs) {
+                            for (let i = 0; i < 6; i++) {
+                                axesConfig[i] = sessionData.configs[i] || null;
+                            }
+                            renderDashboard();
+                            // Optional: if currentModalAxis is open, update it
+                            if (currentModalAxis !== null) openModal(currentModalAxis);
+                        }
+                        if (sessionData.pvs) {
+                            for (const [pv, value] of Object.entries(sessionData.pvs)) {
+                                const isReadOnly = pv.endsWith('.RBV') || pv.endsWith('.DRBV') || pv.endsWith('.RRBV') || pv.endsWith('.MSTA') || pv.endsWith('.MOVN') || pv.endsWith('.STAT');
+                                // Sequence execution SHOULD trigger motion. VAL and DVAL allowed here.
+                                const isInternalControl = pv.endsWith('.JOGR') || pv.endsWith('.JOGF') || pv.endsWith('.HOMR') || pv.endsWith('.HOMF') || pv.endsWith('.STOP');
+                                if (!isReadOnly && !isInternalControl) {
+                                    app.write(pv, value);
+                                }
+                            }
+                        }
+                        if (sessionData.sequenceSteps) {
+                            sequenceSteps = sessionData.sequenceSteps;
+                        }
+                        if (sessionData.notepad !== undefined) {
+                            document.getElementById('notepad').value = sessionData.notepad;
+                        }
+                        saveAppState();
+                        return true;
+                    });
+            },
+
+            populateSessionDropdown() {
+                fetch('/api/sessions')
+                    .then(r => r.json())
+                    .then(files => {
+                        const select = document.getElementById('session-select');
+                        if (!select) return;
+                        // Keep the first option
+                        const firstOption = select.querySelector('option');
+                        select.innerHTML = '';
+                        if (firstOption) select.appendChild(firstOption);
+                        files.forEach(f => {
+                            const opt = document.createElement('option');
+                            opt.value = f;
+                            opt.textContent = f.replace('.json', '');
+                            select.appendChild(opt);
+                        });
+                    })
+                    .catch(err => console.error('Failed to load session list:', err));
+            },
+
+            async openModal(idx) {
+                currentModalAxis = idx;
+                const pvPrefix = `${PREFIX}m${idx + 1}`;
+
+                document.getElementById('modal-axis-title').innerText = `Motor ${idx + 1} (${pvPrefix})`;
+
+                const badge = document.getElementById('modal-model-badge');
+                if (axesConfig[idx]) {
+                    badge.innerText = axesConfig[idx].stageModel;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+
+                // Load template if not loaded
+                if (!motorPopupTemplate) {
+                    try {
+                        const r = await fetch('motor_popup.html');
+                        const html = await r.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const mainContent = doc.querySelector('main');
+                        motorPopupTemplate = mainContent ? mainContent.innerHTML : html;
+                    } catch (e) {
+                        console.error("Failed to load template", e);
+                        alert("Failed to load modal template.");
+                        return;
+                    }
+                }
+
+                const container = document.getElementById('modal-content-container');
+                if (container) {
+                    container.innerHTML = motorPopupTemplate.replaceAll('$(P)$(M)', pvPrefix);
+                }
+
+                const modal = document.getElementById('detail-modal');
+
+                // Render Specs and Driver Settings if present in config
+                const specsList = document.getElementById('modal-specs-list');
+                const driverList = document.getElementById('modal-driver-list');
+                const stageBadge = document.getElementById('modal-stage-badge');
+
+                if (axesConfig[idx]) {
+                    stageBadge.innerText = axesConfig[idx].stageModel || "Unknown";
+
+                    if (axesConfig[idx].specifications) {
+                        specsList.innerHTML = Object.entries(axesConfig[idx].specifications)
+                            .map(([k, v]) => `<div class="flex justify-between items-center px-2 py-1 border-b border-slate-700/30"><span class="text-xs text-slate-400 font-bold">${k}</span><span class="text-xs text-slate-200 text-right font-bold">${v}</span></div>`)
+                            .join('');
+                    } else {
+                        specsList.innerHTML = '<div class="text-slate-600 italic text-center py-4">No specifications found</div>';
+                    }
+
+                    if (axesConfig[idx].driverSettings) {
+                        driverList.innerHTML = Object.entries(axesConfig[idx].driverSettings)
+                            .map(([k, v]) => `<div class="flex justify-between items-center px-2 py-1 border-b border-slate-700/30"><span class="text-xs text-slate-400 font-bold">${k}</span><span class="text-xs text-slate-300 text-right font-mono font-bold">${v}</span></div>`)
+                            .join('');
+                    } else {
+                        driverList.innerHTML = '<div class="text-slate-600 text-center py-2">No driver settings</div>';
+                    }
+                } else {
+                    stageBadge.innerText = "No Stage Selected";
+                    specsList.innerHTML = '<div class="text-slate-600 italic text-center py-8">Please select a stage configuration file to view specifications.</div>';
+                    driverList.innerHTML = '';
+                }
+
+                modal.classList.remove('hidden');
+
+                // 서버 stage 파일 목록 로드
+                UI.populateStageDropdown();
+
+                // Let the controller rescan and subscribe
+                app.bindDOM();
             }
+        };
+
+        function toggleCollapse(btn) {
+            UI.toggleCollapse(btn);
+        }
+
+        function saveSessionToServer() {
+            UI.saveSessionToServer();
+        }
+
+        function loadSessionFromServer(filename) {
+            return UI.loadSessionFromServer(filename);
+        }
+
+        function populateSessionDropdown() {
+            UI.populateSessionDropdown();
         }
 
         // Core motor suffixes to track and save (excluding movement-triggering PVs like .VAL)
@@ -56,13 +263,13 @@
                             <span data-pv="${pvPrefix}.MOVN" class="hidden"></span>
                             <div id="axis-conn-${idx}" class="w-2 h-2 rounded-full bg-slate-600 shadow-sm ml-1" title="Disconnected"></div>
                             
-                            <button onclick="openModal(${idx}); event.stopPropagation();" class="text-slate-500 hover:text-blue-400 transition-colors ml-1 p-0.5 rounded hover:bg-slate-700/50" title="Detailed Settings">
+                            <button data-action="open-modal" data-axis="${idx}" class="text-slate-500 hover:text-blue-400 transition-colors ml-1 p-0.5 rounded hover:bg-slate-700/50" title="Detailed Settings">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                 </svg>
                             </button>
 
-                            <button onclick="toggleCollapse(this); event.stopPropagation();" class="collapse-btn text-slate-500 hover:text-white transition-colors ml-1">
+                            <button data-action="toggle-collapse" class="collapse-btn text-slate-500 hover:text-white transition-colors ml-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -1406,5 +1613,47 @@
 
         // Initialize lists
         populateSessionDropdown();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sessionSelect = document.getElementById('session-select');
+            if (sessionSelect) {
+                sessionSelect.addEventListener('mousedown', populateSessionDropdown);
+                sessionSelect.addEventListener('change', (event) => loadSessionFromServer(event.target.value));
+            }
+
+            const saveSessionBtn = document.getElementById('save-session-btn');
+            if (saveSessionBtn) {
+                saveSessionBtn.addEventListener('click', saveSessionToServer);
+            }
+
+            const axesContainer = document.getElementById('axes-container');
+            if (axesContainer) {
+                axesContainer.addEventListener('click', (event) => {
+                    const openButton = event.target.closest('[data-action="open-modal"]');
+                    if (openButton) {
+                        event.stopPropagation();
+                        const axis = Number(openButton.dataset.axis);
+                        if (!Number.isNaN(axis)) {
+                            openModal(axis);
+                        }
+                        return;
+                    }
+
+                    const collapseButton = event.target.closest('[data-action="toggle-collapse"]');
+                    if (collapseButton) {
+                        event.stopPropagation();
+                        const card = collapseButton.closest('.card');
+                        if (card) {
+                            card.classList.toggle('collapsed');
+                        }
+                    }
+                });
+            }
+        });
+
+        // Wrapper functions for backward compatibility
+        function openModal(idx) {
+            return UI.openModal(idx);
+        }
 
 

@@ -342,3 +342,64 @@ AI: 위 섹션을 읽고 1.1~1.4를 자동 작성해서 제공
 - [x] JSON 파일 존재: session_Home.json과 SA05A-R2B01.json 파일 확인
 - [x] JavaScript 요청 매칭: fetch(`/sessions/...`)와 fetch(`/stages/...`)가 새 라우팅으로 처리됨
 - [x] 서버 재시작: web_gateway.py가 정상적으로 실행됨 (포트 9999)
+
+
+
+
+
+## 📋 1. 작업지시 (User Instruction)
+1. github의 origin/develop 브랜치에서 upstream/master 브랜치로 pull request 수행하였고 upstream/master의 gemini-code-assist로 부터 code review 도착하였으므로 그 내용을 공유할태니 수정 바람.
+  - docs/develop/order.md : 저장소 스타일 가이드에 따르면 작업 지시 및 결과 기록은 kohzuApp/docs/Instruction.md 파일에 작성하도록 명시되어 있습니다. (스타일 가이드 6라인 참조). 현재 추가된 docs/develop/order.md 파일은 해당 경로와 다릅니다. 프로젝트의 일관성을 위해 이 파일의 내용을 kohzuApp/docs/Instruction.md로 이동하고 develop/ 디렉토리 및 하위 파일 삭제.
+  - kohzuApp/opi/css/dashboard.css : CSS 파일 전반에 걸쳐 !important 속성이 과도하게 사용되고 있습니다. 이는 스타일 충돌을 해결하기 위한 임시방편일 수는 있으나, 장기적으로는 코드의 유지보수성을 저해하고 디버깅을 어렵게 만듭니다. !important를 사용하는 대신, 더 구체적인 CSS 선택자(selector)를 사용하여 우선순위를 높이는 방법을 고려해 보시는 것을 권장합니다. 예를 들어, body .input-dark-tab과 같이 상위 선택자를 추가하여 명시성을 높일 수 있습니다.
+  - kohzuApp/opi/css/motor_popup.css : 이 파일에서도 !important 속성이 많이 사용되고 있습니다. 이는 CSS의 우선순위 규칙을 무시하게 만들어 예기치 않은 스타일 문제를 일으킬 수 있고, 유지보수를 어렵게 합니다. !important를 제거하고, 필요한 경우 선택자의 명시도(specificity)를 높여 스타일을 적용하는 것이 좋습니다.
+  - kohzuApp/opi/html/dashboard.html : HTML 태그에 onmousedown, onchange와 같은 인라인 이벤트 핸들러를 직접 사용하는 것은 코드의 구조와 동작을 분리하는 최신 웹 개발 방식과 거리가 있습니다. 유지보수성 향상을 위해, dashboard.js 파일 내에서 addEventListener를 사용하여 이벤트를 동적으로 바인딩하는 'Unobtrusive JavaScript' 패턴을 적용하는 것을 권장합니다.
+  - kohzuApp/opi/html/motor_popup.html : HTML 요소에 onclick과 같은 인라인 이벤트 핸들러를 사용하는 대신, JavaScript 파일에서 addEventListener를 통해 이벤트를 바인딩하는 것이 유지보수성과 코드 분리 측면에서 더 좋은 방법입니다.
+  - kohzuApp/opi/js/dashboard.js : toggleCollapse를 비롯한 많은 함수들이 전역 스코프에 정의되어 있습니다. 이는 다른 스크립트와의 잠재적인 이름 충돌을 야기할 수 있으며, 코드의 모듈성을 저해합니다. 이러한 함수들을 하나의 객체(네임스페이스)로 묶어 관리하는 것을 권장합니다.
+  - kohzuApp/opi/js/motor_popup.js : handleFileUpload 함수가 전역 스코프에 정의되어 있습니다. dashboard.js와 마찬가지로, 이 함수 또한 네임스페이스 객체로 캡슐화하여 전역 스코프 오염을 방지하고 코드의 모듈성을 높이는 것이 좋습니다.
+
+### ✅ 1.1 Todo List (AI Analysis)
+- [x] **Step 1: 문서 이동** - docs/develop/order.md 내용을 kohzuApp/docs/Instruction.md로 이동, develop/ 디렉토리 삭제
+- [x] **Step 2: CSS !important 제거** - dashboard.css와 motor_popup.css에서 !important 속성 제거, 상위 선택자(body)로 명시도 높임
+- [x] **Step 3: HTML 인라인 이벤트 제거** - dashboard.html과 motor_popup.html에서 onclick/onchange 제거, data-action 속성 추가
+- [x] **Step 4: JS 네임스페이스 적용** - dashboard.js와 motor_popup.js에 UI/MotorPopup 네임스페이스 적용, 전역 함수 캡슐화
+- [x] **Step 5: 이벤트 바인딩 개선** - DOMContentLoaded에서 addEventListener로 이벤트 동적 바인딩
+- [x] **Step 6: 검증** - 구문 오류 확인, 웹 서버 실행 테스트
+
+### 📝 1.2 Result (Execution Summary)
+- **문서 이동 완료**: docs/develop/order.md → kohzuApp/docs/Instruction.md 복사, develop/ 디렉토리 삭제
+- **CSS 최적화**: !important 속성 전부 제거, body 선택자로 우선순위 확보, .session-select 클래스 추가
+- **HTML 구조 개선**: 인라인 이벤트 제거, id/data-action 속성으로 대체
+- **JS 모듈화**: UI와 MotorPopup 네임스페이스 적용, 전역 스코프 오염 방지
+- **이벤트 바인딩**: DOMContentLoaded에서 addEventListener 사용, Unobtrusive JavaScript 패턴 적용
+- **모달 data-action 바인딩**: data-action="open-modal" 속성으로 모달 열기 이벤트 위임 구현
+- **UI 네임스페이스 모듈화**: openModal, saveSessionToServer, loadSessionFromServer, populateSessionDropdown 함수를 UI 객체로 캡슐화
+- **검증 통과**: Python/JS 구문 오류 없음, 웹 서버 정상 실행
+
+### 🛠 1.3 변경 사항 (Summary of Changes)
+- **문서 이동**:
+  - `docs/develop/order.md` → `kohzuApp/docs/Instruction.md` (복사)
+  - `docs/develop/` 디렉토리 삭제
+
+- **CSS 파일 수정**:
+  - `kohzuApp/opi/css/dashboard.css`: !important 제거, body 선택자 적용, .session-select 클래스 추가
+  - `kohzuApp/opi/css/motor_popup.css`: !important 제거, body 선택자 적용
+
+- **HTML 파일 수정**:
+  - `kohzuApp/opi/html/dashboard.html`: session-select onclick/onchange 제거, .session-select 클래스 적용, save 버튼 id 추가
+  - `kohzuApp/opi/html/motor_popup.html`: all-stop 버튼 onclick 제거, id="all-stop-btn" 추가
+
+- **JS 파일 수정**:
+  - `kohzuApp/opi/js/dashboard.js`: UI 네임스페이스 추가, DOMContentLoaded 이벤트 바인딩, data-action 기반 이벤트 위임, openModal 함수 UI 객체로 이동 및 wrapper 함수 추가
+
+### 🔍 1.4 검증 결과 (Validation)
+- [x] 문서 이동: kohzuApp/docs/Instruction.md 생성, develop/ 삭제 완료
+- [x] CSS !important 제거: 모든 !important 속성 제거, 명시도 높임 적용
+- [x] HTML 인라인 이벤트 제거: onclick/onchange 제거, data-action/id 속성 적용
+- [x] JS 네임스페이스 적용: UI/MotorPopup 객체로 함수 캡슐화
+- [x] 이벤트 바인딩 개선: addEventListener로 동적 바인딩 구현
+- [x] 모달 data-action 바인딩: data-action="open-modal" 이벤트 위임 작동 확인
+- [x] UI 네임스페이스 모듈화: openModal 등 함수 UI 객체로 캡슐화 완료
+- [x] 구문 검증: Python/JS 파일 구문 오류 없음
+- [x] 웹 서버 실행: web_gateway.py 정상 실행 (포트 9999)
+
+  

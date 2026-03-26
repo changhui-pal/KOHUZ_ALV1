@@ -60,9 +60,9 @@
         }
 
         .input-dark {
-            background-color: #0f172a !important;
-            border: 1px solid #334155 !important;
-            color: #e2e8f0 !important;
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            color: #e2e8f0;
             border-radius: 0.25rem;
             padding: 0.125rem 0.375rem;
             transition: border-color 0.2s;
@@ -74,30 +74,29 @@
             outline: none;
         }
 
-        /* Enforce dark theme for all dynamic input fields */
-        .input-dark-tab,
-        input:not([type="checkbox"]):not([type="radio"]),
-        select {
-            background-color: #0f172a !important;
-            border: 1px solid #334155 !important;
-            color: #f1f5f9 !important;
+        body .input-dark-tab,
+        body input:not([type="checkbox"]):not([type="radio"]),
+        body select {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            color: #f1f5f9;
             border-radius: 0.25rem;
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        .input-dark-tab:focus,
-        input:not([type="checkbox"]):not([type="radio"]):focus,
-        select:focus {
-            border-color: #3b82f6 !important;
+        body .input-dark-tab:focus,
+        body input:not([type="checkbox"]):not([type="radio"]):focus,
+        body select:focus {
+            border-color: #3b82f6;
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
         }
 
         /* Readonly / Disabled state */
-        input[readonly],
-        .input-readonly {
-            background-color: #1e293b !important;
-            color: #94a3b8 !important;
+        body input[readonly],
+        body .input-readonly {
+            background-color: #1e293b;
+            color: #94a3b8;
             cursor: default;
         }
 
@@ -212,6 +211,26 @@
             opacity: 1;
         }
 
+        .session-select {
+            background-color: #0f172a;
+            border: 1px solid #475569;
+            border-radius: 0.375rem;
+            color: #e2e8f0;
+            font-size: 0.75rem;
+            padding: 0.125rem 0.5rem;
+            min-width: 120px;
+            width: 100%;
+        }
+
+        .session-select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+            outline: none;
+        }
+
+        #save-session-btn {
+            cursor: pointer;
+        }
 
         /* Make sure parents have relative positioning for absolute children */
         [data-pv],
@@ -286,13 +305,13 @@
 
         /* Task 19: Card Collapse */
         .card.collapsed {
-            min-height: 0 !important;
-            height: auto !important;
-            padding-bottom: 0.5rem !important;
+            min-height: 0;
+            height: auto;
+            padding-bottom: 0.5rem;
         }
 
         .card.collapsed>*:not(:first-child) {
-            display: none !important;
+            display: none;
         }
 
         .collapse-btn svg {
