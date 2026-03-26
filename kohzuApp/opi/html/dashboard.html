@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6-Axis Motor Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+
+<body class="min-h-screen flex flex-col bg-slate-900 text-slate-200">
+
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
+        <div class="px-4 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4">
+            <div class="flex items-center gap-2">
+                <div class="bg-blue-600 p-1.5 md:p-2 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </div>
+                <h1 class="text-sm md:text-xl font-bold text-white tracking-tight">Kohzu 6-Axis Dashboard</h1>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                <div
+                    class="flex items-center gap-2 bg-slate-800 px-1 py-0.5 rounded border border-slate-700 flex-1 min-w-[140px] md:flex-none">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase ml-1">Sessions</span>
+                    <select id="session-select"
+                        class="bg-slate-900 border border-slate-600 rounded text-xs py-0.5 px-2 outline-none font-bold text-slate-300 cursor-pointer flex-1 md:min-w-[120px]"
+                        onmousedown="populateSessionDropdown()" onchange="loadSessionFromServer(this.value)">
+                        <option value="">Select Session...</option>
+                    </select>
+                </div>
+
+                <button onclick="saveSessionToServer()"
+                    class="text-xs font-bold py-1 px-2 rounded border border-slate-600 bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors uppercase shadow-sm flex items-center justify-center gap-1.5 flex-none"
+                    title="Save Session to Server">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    SAVE
+                </button>
+
+                <div id="conn-status"
+                    class="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-700 text-slate-300 text-[10px] font-bold border border-slate-600 flex-1 md:flex-none justify-center">
+                    <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>Disconnected
+                </div>
+                <button onclick="app.abortAll()"
+                    class="text-[10px] font-black py-1 px-3 rounded border border-yellow-700 bg-yellow-600 hover:bg-yellow-500 text-slate-900 transition-colors shadow-sm uppercase flex items-center justify-center gap-1.5 flex-1 md:flex-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z"
+                            clip-rule="evenodd" />
+                    </svg>
+                    ABORT ALL
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content: 2 Columns Layout -->
+    <main class="flex-1 p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 1st Column: Axis Cards -->
+        <div class="flex flex-wrap justify-center gap-4 lg:gap-6 content-start" id="axes-container">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- 2nd Column: Graph & Notepad -->
+        <div class="flex flex-col gap-6">
+            <!-- Graph Panels (Row 1) - Multi-panel support -->
+            <div class="card card-wide-responsive bg-slate-800 flex flex-col p-4 border border-slate-700 panel-graph">
+                <div class="flex flex-col lg:flex-row justify-between lg:items-center mb-2 gap-2">
+                    <div class="flex items-center justify-between">
+                        <div class="card-title text-slate-300">Readback Status Timeline</div>
+                        <button onclick="toggleCollapse(this); event.stopPropagation();"
+                            class="collapse-btn text-slate-500 hover:text-white transition-colors ml-4 lg:hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Interval Selector -->
+                        <div
+                            class="flex items-center gap-2 bg-slate-800/80 p-1 rounded-lg border border-slate-700 group/interval">
+                            <span class="text-[9px] font-bold text-slate-500 uppercase ml-1">Interval</span>
+                            <select id="interval-select"
+                                class="bg-slate-900 border border-slate-600 rounded text-[10px] py-0.5 px-2 outline-none font-bold text-slate-300 cursor-pointer min-w-[60px] hover:border-blue-500 transition-colors"
+                                onchange="updateChartInterval(parseFloat(this.value) * 1000)">
+                                <option value="0.5">0.5s</option>
+                                <option value="1" selected>1.0s</option>
+                                <option value="2">2.0s</option>
+                                <option value="5">5.0s</option>
+                                <option value="10">10.0s</option>
+                                <option value="30">30.0s</option>
+                                <option value="60">60.0s</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-2 text-[10px] font-bold ml-auto lg:ml-0">
+                            <span
+                                class="px-1.5 py-0.5 rounded bg-blue-900/50 text-blue-400 border border-blue-800">Linear</span>
+                            <span
+                                class="px-1.5 py-0.5 rounded bg-purple-900/50 text-purple-400 border border-purple-800">Vertical</span>
+                            <span
+                                class="px-1.5 py-0.5 rounded bg-orange-900/50 text-orange-400 border border-orange-800">Rotation</span>
+                        </div>
+                        <button onclick="toggleCollapse(this); event.stopPropagation();"
+                            class="collapse-btn text-slate-500 hover:text-white transition-colors ml-2 hidden lg:block">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex-1 flex flex-col gap-2 overflow-y-auto pr-1 custom-scrollbar">
+                    <!-- Linear Panel -->
+                    <div class="h-48 min-h-[140px] bg-slate-900/50 border border-slate-700/50 rounded p-1 relative">
+                        <div
+                            class="absolute top-1 left-16 text-[10px] font-black text-blue-400 uppercase tracking-widest z-10 bg-slate-900/80 px-2 rounded">
+                            Linear Axes (mm)</div>
+                        <canvas id="chart-linear"></canvas>
+                    </div>
+                    <!-- Vertical Panel -->
+                    <div class="h-48 min-h-[140px] bg-slate-900/50 border border-slate-700/50 rounded p-1 relative">
+                        <div
+                            class="absolute top-1 left-16 text-[10px] font-black text-purple-400 uppercase tracking-widest z-10 bg-slate-900/80 px-2 rounded">
+                            Vertical Axes (mm)</div>
+                        <canvas id="chart-vertical"></canvas>
+                    </div>
+                    <!-- Rotation Panel -->
+                    <div class="h-48 min-h-[140px] bg-slate-900/50 border border-slate-700/50 rounded p-1 relative">
+                        <div
+                            class="absolute top-1 left-16 text-[10px] font-black text-orange-400 uppercase tracking-widest z-10 bg-slate-900/80 px-2 rounded">
+                            Rotation Axes (deg)</div>
+                        <canvas id="chart-rotation"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Area Scan Mode -->
+            <div
+                class="card card-wide-responsive bg-slate-800 panel-area-scan flex flex-col p-4 border border-slate-700">
+                <div class="flex flex-col lg:flex-row justify-between lg:items-center mb-3 gap-2">
+                    <div class="flex items-center justify-between">
+                        <div class="card-title text-slate-300 whitespace-nowrap">2D Area Scan</div>
+                        <button onclick="toggleCollapse(this); event.stopPropagation();"
+                            class="collapse-btn text-slate-500 hover:text-white transition-colors ml-4 lg:hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                        <!-- Progress Bar Container -->
+                        <div id="scan-progress-bar-container"
+                            class="hidden flex items-center gap-2 w-full max-w-[120px]">
+                            <div
+                                class="flex-1 h-1.5 bg-slate-700/80 rounded-full overflow-hidden border border-slate-600">
+                                <div id="scan-progress-fill"
+                                    class="h-full bg-blue-500 w-0 transition-all duration-300 relative">
+                                    <div class="absolute inset-0 bg-white/20 w-full animate-pulse"></div>
+                                </div>
+                            </div>
+                            <div
+                                class="text-[9px] font-mono text-blue-400 font-bold w-[24px] text-right whitespace-nowrap">
+                                <span id="scan-percentage">0</span>%
+                            </div>
+                        </div>
+
+                        <div id="scan-status-badge"
+                            class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-700 text-slate-400 border border-slate-600">
+                            READY</div>
+
+                        <button onclick="toggleCollapse(this); event.stopPropagation();"
+                            class="collapse-btn text-slate-500 hover:text-white transition-colors ml-2 hidden lg:block">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex border-b border-slate-700/50 mb-3">
+                    <button onclick="switchScanTab('raster')" id="tab-btn-raster"
+                        class="flex-1 py-1 text-xs font-bold border-b-2 border-blue-500 text-blue-400 transition-colors">Raster
+                        Scan</button>
+                    <button onclick="switchScanTab('fermat')" id="tab-btn-fermat"
+                        class="flex-1 py-1 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-300 transition-colors">Fermat
+                        Spiral</button>
+                </div>
+
+                <div class="space-y-3 flex-1 flex flex-col">
+                    <div class="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4 min-w-0 min-h-0">
+                        <!-- Left Column: Parameters -->
+                        <div class="flex flex-col gap-3 lg:w-[210px]">
+                            <!-- COMMON AXIS SELECTION -->
+                            <div class="flex flex-col gap-1 w-full flex-shrink-0">
+                                <div
+                                    class="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded border border-slate-700 w-full mb-1">
+                                    <span class="text-[10px] font-bold text-blue-400 uppercase w-12 shrink-0">X
+                                        Axis:</span>
+                                    <select id="scan-x-axis"
+                                        class="flex-1 bg-slate-800 border border-slate-600 rounded text-[9px] px-1 py-0.5 text-slate-300 outline-none">
+                                        <option value="1">Motor 1</option>
+                                        <option value="2">Motor 2</option>
+                                        <option value="3">Motor 3</option>
+                                        <option value="4">Motor 4</option>
+                                        <option value="5">Motor 5</option>
+                                        <option value="6">Motor 6</option>
+                                    </select>
+                                </div>
+                                <div
+                                    class="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded border border-slate-700 w-full">
+                                    <span class="text-[10px] font-bold text-purple-400 uppercase w-12 shrink-0">Y
+                                        Axis:</span>
+                                    <select id="scan-y-axis"
+                                        class="flex-1 bg-slate-800 border border-slate-600 rounded text-[9px] px-1 py-0.5 text-slate-300 outline-none">
+                                        <option value="1">Motor 1</option>
+                                        <option value="2" selected>Motor 2</option>
+                                        <option value="3">Motor 3</option>
+                                        <option value="4">Motor 4</option>
+                                        <option value="5">Motor 5</option>
+                                        <option value="6">Motor 6</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- TAB CONTENTS (Raster / Fermat Parameters) -->
+                            <div class="flex-1 relative">
+                                <!-- RASTER TAB -->
+                                <div id="scan-tab-raster" class="flex flex-col gap-3">
+                                    <!-- X Config -->
+                                    <div class="bg-slate-900/40 p-2.5 rounded border border-slate-700/50">
+                                        <div
+                                            class="text-[10px] font-black text-blue-400 uppercase mb-2 border-b border-slate-700/50 pb-1 tracking-widest">
+                                            X Axis Range</div>
+                                        <div
+                                            class="grid grid-cols-[60px_80px_1fr] gap-2 items-center mb-1.5 border-b border-slate-700/20 pb-1">
+                                            <span class="text-[10px] text-slate-400 font-bold">Start:</span>
+                                            <input id="raster-x-start" type="number" value="0"
+                                                class="w-[80px] h-[22px] bg-slate-900 border border-slate-700 rounded px-1.5 text-xs text-right text-white outline-none focus:border-blue-500">
+                                            <span class="text-[9px] text-slate-500 italic">Rel X (mm)</span>
+                                        </div>
+                                        <div
+                                            class="grid grid-cols-[60px_80px_1fr] gap-2 items-center mb-1.5 border-b border-slate-700/20 pb-1">
+                                            <span class="text-[10px] text-slate-400 font-bold">End:</span>
+                                            <input id="raster-x-end" type="number" value="10"
+                                                class="w-[80px] h-[22px] bg-slate-900 border border-slate-700 rounded px-1.5 text-xs text-right text-white outline-none focus:border-blue-500">
+                                            <span class="text-[9px] text-slate-500 italic">Rel X (mm)</span>
+                                        </div>
+                                        <div class="grid grid-cols-[60px_80px_1fr] gap-2 items-center">
+                                            <span class="text-[10px] text-slate-400 font-bold">Points:</span>
+                                            <input id="raster-x-steps" type="number" value="10" min="2"
+                                                class="w-[80px] h-[22px] bg-slate-900 border border-slate-700 rounded px-1.5 text-xs text-right text-white outline-none focus:border-blue-500">
+                                            <span class="text-[9px] text-slate-500 italic">Count</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Y Config -->
+                                    <div class="bg-slate-900/40 p-2.5 rounded border border-slate-700/50">
+                                        <div
+                                            class="text-[10px] font-black text-purple-400 uppercase mb-2 border-b border-slate-700/50 pb-1 tracking-widest">
+                                            Y Axis Range</div>
+                                        <div
+                                            class="grid grid-cols-[60px_80px_1fr] gap-2 items-center mb-1.5 border-b border-slate-700/20 pb-1">
+                                            <span class="text-[10px] text-slate-400 font-bold">Start:</span>
+                                            <input id="raster-y-start" type="number" value="0"
+                                                class="w-[80px] h-[22px] bg-slate-900 border border-slate-700 rounded px-1.5 text-xs text-right text-white outline-none focus:border-blue-500">
+                                            <span class="text-[9px] text-slate-500 italic">Rel Y (mm)</span>
+                                        </div>
+                                        <div
+                                            class="grid grid-cols-[60px_80px_1fr] gap-2 items-center mb-1.5 border-b border-slate-700/20 pb-1">
+                                            <span class="text-[10px] text-slate-400 font-bold">End:</span>
+                                            <input id="raster-y-end" type="number" value="10"
+                                                class="w-[80px] h-[22px] bg-slate-900 border border-slate-700 rounded px-1.5 text-xs text-right text-white outline-none focus:border-blue-500">
+                                            <span class="text-[9px] text-slate-500 italic">Rel Y (mm)</span>
+                                        </div>
+                                        <div class="grid grid-cols-[60px_80px_1fr] gap-2 items-center">
+                                            <span class="text-[10px] text-slate-400 font-bold">Points:</span>
+                                            <input id="raster-y-steps" type="number" value="10" min="2"
+                                                class="w-[80px] h-[22px] bg-slate-900 border border-slate-700 rounded px-1.5 text-xs text-right text-white outline-none focus:border-blue-500">
+                                            <span class="text-[9px] text-slate-500 italic">Count</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- FERMAT TAB -->
+                                <div id="scan-tab-fermat" class="flex flex-col gap-3 hidden">
+                                    <!-- Center Config -->
+                                    <div class="bg-slate-900/40 p-2.5 rounded border border-slate-700/50">
+                                        <div
+                                            class="text-[10px] font-black text-slate-300 uppercase mb-2 border-b border-slate-700/50 pb-1 tracking-widest">
+                                            Center Position</div>
+                                        <div
+                                            class="grid grid-cols-[60px_80px_1fr] gap-2 items-center mb-1.5 border-b border-slate-700/20 pb-1">
+                                            <span class="text-[10px] text-slate-400 font-bold">X (mm):</span>
+                                            <input id="fermat-x-center" type="number" value="5"
+                                                class="w-[80px] h-[22px] bg-slate-900 border border-slate-700 rounded px-1.5 text-xs text-right text-white outline-none focus:border-blue-500">
+                                            <span class="text-[9px] text-slate-500 italic">Abs X (mm)</span>
+                                        </div>
+                                        <div class="grid grid-cols-[60px_80px_1fr] gap-2 items-center">
+                                            <span class="text-[10px] text-slate-400 font-bold">Y (mm):</span>
+                                            <input id="fermat-y-center" type="number" value="5"
+                                                class="w-[80px] h-[22px] bg-slate-900 border border-slate-700 rounded px-1.5 text-xs text-right text-white outline-none focus:border-blue-500">
+                                            <span class="text-[9px] text-slate-500 italic">Abs Y (mm)</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Settings -->
+                                    <div class="bg-slate-900/40 p-2.5 rounded border border-slate-700/50">
+                                        <div
+                                            class="text-[10px] font-black text-slate-300 uppercase mb-2 border-b border-slate-700/50 pb-1 tracking-widest">
+                                            Spiral Parameters</div>
+                                        <div
+                                            class="grid grid-cols-[60px_80px_1fr] gap-2 items-center mb-1.5 border-b border-slate-700/20 pb-1">
+                                            <span class="text-[10px] text-slate-400 font-bold">X Range:</span>
+                                            <input id="fermat-x-range" type="number" value="10" min="0.1" step="0.5"
+                                                class="w-[80px] h-[22px] bg-slate-900 border border-slate-700 rounded px-1.5 text-xs text-right text-white outline-none focus:border-blue-500">
+                                            <span class="text-[9px] text-slate-500 italic">(mm)</span>
+                                        </div>
+                                        <div
+                                            class="grid grid-cols-[60px_80px_1fr] gap-2 items-center mb-1.5 border-b border-slate-700/20 pb-1">
+                                            <span class="text-[10px] text-slate-400 font-bold">Y Range:</span>
+                                            <input id="fermat-y-range" type="number" value="10" min="0.1" step="0.5"
+                                                class="w-[80px] h-[22px] bg-slate-900 border border-slate-700 rounded px-1.5 text-xs text-right text-white outline-none focus:border-blue-500">
+                                            <span class="text-[9px] text-slate-500 italic">(mm)</span>
+                                        </div>
+                                        <div
+                                            class="grid grid-cols-[60px_80px_1fr] gap-2 items-center mb-1.5 border-b border-slate-700/20 pb-1">
+                                            <span class="text-[10px] text-slate-400 font-bold">dR:</span>
+                                            <input id="fermat-dr" type="number" value="0.5" min="0.01" step="0.1"
+                                                class="w-[80px] h-[22px] bg-slate-900 border border-slate-700 rounded px-1.5 text-xs text-right text-white outline-none focus:border-blue-500">
+                                            <span class="text-[9px] text-slate-500 italic">Spacing</span>
+                                        </div>
+                                        <div class="grid grid-cols-[60px_80px_1fr] gap-2 items-center">
+                                            <span class="text-[10px] text-slate-400 font-bold">Factor:</span>
+                                            <input id="fermat-factor" type="number" value="1.0" min="0.1" step="0.1"
+                                                class="w-[80px] h-[22px] bg-slate-900 border border-slate-700 rounded px-1.5 text-xs text-right text-white outline-none focus:border-blue-500">
+                                            <span class="text-[9px] text-slate-500 italic">Density</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Graph -->
+                        <div class="flex flex-col w-full h-full min-h-[300px] min-w-0">
+                            <!-- XY Plot Section -->
+                            <div
+                                class="flex-1 w-full bg-slate-900/50 border border-slate-700/50 rounded p-2 relative h-full flex flex-col min-w-0 min-h-0">
+                                <div
+                                    class="absolute top-1 left-2 text-[10px] font-black text-blue-400 opacity-70 uppercase tracking-widest z-10 w-full text-center">
+                                    Scan Path Preview</div>
+                                <div class="w-full flex-1 relative mt-3 min-w-0 min-h-0">
+                                    <canvas id="scan-xy-plot"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-700/50 mt-2">
+                        <div class="flex items-center gap-3">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Dwell (sec)</span>
+                            <input id="scan-dwell" type="number" value="0.5" min="0" step="0.1"
+                                class="w-[60px] h-[24px] bg-slate-900 border border-slate-600 rounded px-1.5 text-xs text-right text-white">
+                        </div>
+
+                        <div class="flex gap-2 items-center">
+                            <div id="scan-progress"
+                                class="hidden text-[10px] text-blue-400 font-mono flex items-center mr-2">
+                                Point: <span id="scan-cur-pt" class="mx-1">0</span> / <span id="scan-total-pt">-</span>
+                            </div>
+                            <button id="btn-scan-start" onclick="startAreaScan()"
+                                class="btn text-xs font-bold py-1 px-4 rounded border border-blue-600 bg-blue-700 hover:bg-blue-600 text-white transition-colors uppercase shadow-sm">RUN
+                                SCAN</button>
+                            <button id="btn-scan-stop" onclick="stopAreaScan()"
+                                class="btn text-[10px] font-black py-1 px-4 rounded border border-yellow-700 bg-yellow-600 hover:bg-yellow-500 text-slate-900 transition-colors shadow-sm uppercase text-center hidden">STOP</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sequence Mode (Row 2.5) -->
+            <div
+                class="card card-wide-responsive bg-slate-800 panel-sequence flex flex-col p-4 border border-slate-700">
+                <div class="flex flex-col lg:flex-row justify-between lg:items-center mb-3 gap-2">
+                    <div class="flex items-center justify-between">
+                        <div class="card-title text-slate-300 whitespace-nowrap">Sequence Mode</div>
+                        <button onclick="toggleCollapse(this); event.stopPropagation();"
+                            class="collapse-btn text-slate-500 hover:text-white transition-colors ml-4 lg:hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex items-center gap-1.5 flex-1 lg:flex-none">
+                            <select id="seq-session-select" onmousedown="populateSessionDropdown()"
+                                class="bg-slate-900 border border-slate-700 rounded text-[10px] py-1 px-2 outline-none text-slate-300 w-full lg:max-w-[180px] hover:border-blue-500 transition-colors">
+                                <option value="">Select Session to Add...</option>
+                            </select>
+                            <button onclick="addSequenceStep()"
+                                class="btn btn-primary text-[10px] py-1 px-1.5 whitespace-nowrap">+ STEP</button>
+                        </div>
+
+                        <div id="seq-status-badge"
+                            class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-700 text-slate-400 border border-slate-600 ml-auto lg:ml-0">
+                            READY</div>
+
+                        <button onclick="toggleCollapse(this); event.stopPropagation();"
+                            class="collapse-btn text-slate-500 hover:text-white transition-colors ml-2 hidden lg:block">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-3 flex-1 flex flex-col">
+
+                    <!-- Steps Table -->
+                    <div
+                        class="flex-1 min-h-[150px] max-h-[250px] overflow-y-auto custom-scrollbar border border-slate-700 rounded bg-slate-900/20">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead class="bg-slate-700/50 text-slate-400 uppercase text-[9px] sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-2 py-1.5 border-b border-slate-700">Order</th>
+                                    <th class="px-2 py-1.5 border-b border-slate-700">Session Name</th>
+                                    <th class="px-2 py-1.5 border-b border-slate-700">Target Positions (M1-M6)</th>
+                                    <th class="px-2 py-1.5 border-b border-slate-700 text-center">Use</th>
+                                    <th class="px-2 py-1.5 border-b border-slate-700 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sequence-steps-body" class="divide-y divide-slate-700/30">
+                                <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Iteration & Control -->
+                    <div
+                        class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-slate-700/50">
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase">Repeat</span>
+                                <select id="seq-repeat-mode" onchange="updateSeqIterationUI()"
+                                    class="bg-slate-900 border border-slate-600 rounded text-xs py-1 px-2 text-slate-300 outline-none">
+                                    <option value="once">Once</option>
+                                    <option value="multiple">Multiple</option>
+                                    <option value="infinite">Infinite</option>
+                                </select>
+                            </div>
+                            <div id="seq-count-container" class="hidden flex items-center gap-2">
+                                <input id="seq-repeat-count" type="number" value="1" min="1"
+                                    class="w-[60px] h-[24px] bg-slate-900 border border-slate-600 rounded px-1.5 text-xs text-right text-white">
+                                <span class="text-[10px] text-slate-500 uppercase font-bold">Times</span>
+                            </div>
+                            <div class="flex items-center gap-2 ml-2 border-l border-slate-700 pl-4">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase">Dwell</span>
+                                <input id="seq-dwell-time" type="number" value="1.0" min="0" step="0.5"
+                                    class="w-[60px] h-[24px] bg-slate-900 border border-slate-600 rounded px-1.5 text-xs text-right text-white">
+                                <span class="text-[10px] text-slate-500 uppercase font-bold">Sec</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <div id="seq-progress"
+                                class="hidden text-xs text-blue-400 font-mono flex items-center mr-2">
+                                Loop: <span id="seq-cur-loop" class="mx-1">1</span>/ <span id="seq-total-loop">-</span>
+                                | Step: <span id="seq-cur-step" class="mx-1">1</span>
+                            </div>
+                            <button id="btn-seq-start" onclick="startSequence()"
+                                class="btn text-xs font-bold py-1 px-4 rounded border border-green-600 bg-green-700 hover:bg-green-600 text-white transition-colors uppercase shadow-sm">RUN
+                                SEQUENCE</button>
+                            <button id="btn-seq-stop" onclick="stopSequence()"
+                                class="btn text-[10px] font-black py-1 px-4 rounded border border-yellow-700 bg-yellow-600 hover:bg-yellow-500 text-slate-900 transition-colors shadow-sm uppercase text-center hidden">STOP</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notepad (Row 3) -->
+            <div class="card card-wide-responsive bg-slate-800 panel-notepad flex flex-col p-4 border border-slate-700">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="card-title text-slate-300">Notepad</div>
+                    <button onclick="toggleCollapse(this); event.stopPropagation();"
+                        class="collapse-btn text-slate-500 hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                </div>
+                <textarea id="notepad" oninput="saveAppState()"
+                    class="flex-1 w-full bg-[#0f172a] border border-slate-700 text-slate-200 p-3 rounded text-sm pv-font resize-none focus:outline-none focus:border-blue-500 shadow-inner"
+                    placeholder="Enter session notes here..."></textarea>
+            </div>
+        </div>
+    </main>
+
+    <!-- Detailed Control Modal -->
+    <div id="detail-modal"
+        class="hidden fixed inset-0 z-[100] modal-overlay overflow-y-auto flex justify-center items-start pt-10 pb-10">
+        <div
+            class="bg-slate-900 rounded-xl border border-slate-700 w-full max-w-7xl relative shadow-2xl flex flex-col mx-4">
+
+            <!-- Modal Header -->
+            <div
+                class="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-800 rounded-t-xl sticky top-0 z-10">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span id="modal-axis-title" class="text-blue-400">Axis</span>
+                    <span class="text-slate-500 text-sm font-normal">Detailed Control</span>
+                    <span id="modal-model-badge"
+                        class="ml-4 px-2 py-0.5 rounded text-xs bg-slate-700 text-slate-300 hidden"></span>
+                </h2>
+                <button onclick="closeModal()"
+                    class="text-slate-400 hover:text-white transition-colors bg-slate-700 hover:bg-slate-600 rounded-full p-1 border border-slate-600 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body ( Dynamically loaded from motor_popup.html ) -->
+            <div id="modal-content-container" class="p-6 grid grid-cols-1 lg:grid-cols-5 gap-6 overflow-y-auto"
+                style="max-height: calc(100vh - 150px);">
+                <div class="col-span-1 lg:col-span-5 flex justify-center items-center py-20 text-slate-500">
+                    <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg"
+                        fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                    Loading Template...
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Hidden element for tailwind parser -->
+    <div
+        class="hidden bg-green-600 text-white border-green-600 border-green-500 bg-red-900/50 text-red-300 border-red-800 bg-green-900/50 text-green-300 border-green-800">
+    </div>
+
+    </div>
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>

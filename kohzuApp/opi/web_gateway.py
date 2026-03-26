@@ -169,12 +169,17 @@ class SessionHandler(tornado.web.RequestHandler):
             self.write({"error": str(e)})
 
 def make_app():
+    static_path = os.path.dirname(__file__)
     return tornado.web.Application([
         (r"/ws", EPICSWebSocket),
         (r"/api/stages", StageListHandler),
         (r"/api/sessions", SessionHandler),
+        (r"/css/(.*)", NoCacheStaticFileHandler, {"path": os.path.join(static_path, "css")}),
+        (r"/js/(.*)", NoCacheStaticFileHandler, {"path": os.path.join(static_path, "js")}),
+        (r"/sessions/(.*)", NoCacheStaticFileHandler, {"path": os.path.join(static_path, "sessions")}),
+        (r"/stages/(.*)", NoCacheStaticFileHandler, {"path": os.path.join(static_path, "stages")}),
         (r"/(.*)", NoCacheStaticFileHandler, {
-            "path": os.path.dirname(__file__), 
+            "path": os.path.join(static_path, "html"), 
             "default_filename": "dashboard.html"
         }),
     ])
